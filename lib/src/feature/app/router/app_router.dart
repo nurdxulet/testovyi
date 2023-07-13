@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:testovyi/src/feature/app/presentation/launcher.dart';
 import 'package:testovyi/src/feature/home/presentation/view/aggregates_page.dart';
 import 'package:testovyi/src/feature/home/model/crypto_dto.dart';
+import 'package:testovyi/src/feature/home/presentation/view/search_page.dart';
 
 part 'app_router.gr.dart';
 
@@ -16,6 +17,7 @@ part 'app_router.gr.dart';
       children: [],
     ),
     AutoRoute<void>(page: AggregatesPage),
+    AutoRoute<void>(page: SearchPage),
   ],
 )
 class AppRouter extends _$AppRouter {}

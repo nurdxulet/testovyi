@@ -54,7 +54,11 @@ class _HomePageState extends State<HomePage> {
                   ),
                   Padding(
                     padding: const EdgeInsets.all(10),
-                    child: SvgPicture.asset(Assets.icons.icSearch.path),
+                    child: InkWell(
+                        onTap: () {
+                          context.router.push(const SearchRoute());
+                        },
+                        child: SvgPicture.asset(Assets.icons.icSearch.path)),
                   ),
                 ],
               ),

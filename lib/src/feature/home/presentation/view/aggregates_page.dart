@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:testovyi/src/core/enum/environment.dart';
 import 'package:testovyi/src/core/extension/src/build_context.dart';
@@ -33,8 +34,6 @@ class AggregatesPage extends StatefulWidget with AutoRouteWrapper {
 class _AggregatesPageState extends State<AggregatesPage> {
   //Selected date
   final DateTime date = DateTime(2023, 01, 09);
-  // final String date = DateFormat('yyyy-MM-dd').format(DateTime(2023, 01, 09));
-  // final String dateTo = DateFormat('yyyy-MM-dd').format(DateTime(2023, 02, 09));
   TextEditingController textFieldController = TextEditingController();
 
   RefreshController refreshController = RefreshController();
@@ -93,7 +92,13 @@ class _AggregatesPageState extends State<AggregatesPage> {
                   ),
                   Expanded(
                     child: Text(
-                      widget.crypto.name ?? '',
+                      widget.crypto.name?.replaceAll(
+                              RegExp(
+                                'X:',
+                                dotAll: true,
+                              ),
+                              '') ??
+                          '',
                       style: AppTextStyles.s26w400,
                     ),
                   ),
@@ -115,161 +120,179 @@ class _AggregatesPageState extends State<AggregatesPage> {
                       return const Center(child: CircularProgressIndicator());
                     },
                     loadedState: (barList) {
-                      return Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(16.0).copyWith(bottom: 12, top: 0),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                const Text(
-                                  'Цена:',
-                                  style: AppTextStyles.s14w400Grey,
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    widget.crypto.close.toString(),
-                                    style: AppTextStyles.s26w400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            height: 8,
-                            width: double.infinity,
-                            color: AppColors.kGrey,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                            child: SizedBox(
-                              height: 17,
-                              width: double.infinity,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: periods.length,
-                                itemBuilder: (context, index) {
-                                  return TimePeriodWidget(
-                                    period: periods[index].periodName,
-                                    onTap: () {
-                                      selectedPeriod = periods[index];
-                                      BlocProvider.of<AggregatesCubit>(context).getAggregates(
-                                          widget.crypto.name ?? '',
-                                          '1',
-                                          selectedPeriod?.timespan ?? 'day',
-                                          DateFormat('yyyy-MM-dd')
-                                              .format(DateTime(date.year, date.month - selectedPeriod!.period.months,
-                                                  date.day - selectedPeriod!.period.days))
-                                              .toString(),
-                                          DateFormat('yyyy-MM-dd').format(date).toString(),
-                                          'asc',
-                                          5000,
-                                          kApiKey);
-                                      setState(() {});
-                                    },
-                                    isSelected: selectedPeriod == periods[index],
-                                  );
-                                },
-                                separatorBuilder: (BuildContext context, int index) {
-                                  return const SizedBox(width: 17);
-                                },
+                      return AnimationLimiter(
+                        child: Column(
+                          children: AnimationConfiguration.toStaggeredList(
+                            duration: const Duration(milliseconds: 375),
+                            childAnimationBuilder: (widget) => SlideAnimation(
+                              horizontalOffset: 50.0,
+                              child: FadeInAnimation(
+                                child: widget,
                               ),
                             ),
-                          ),
-                          Container(
-                            height: 8,
-                            width: double.infinity,
-                            color: AppColors.kGrey,
-                          ),
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(16.0).copyWith(bottom: 12, top: 0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'Цена:',
+                                      style: AppTextStyles.s14w400Grey,
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        widget.crypto.close.toString(),
+                                        style: AppTextStyles.s26w400,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                height: 8,
+                                width: double.infinity,
+                                color: AppColors.kGrey,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                child: SizedBox(
+                                  height: 17,
+                                  width: double.infinity,
+                                  child: ListView.separated(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: periods.length,
+                                    itemBuilder: (context, index) {
+                                      return TimePeriodWidget(
+                                        period: periods[index].periodName,
+                                        onTap: () {
+                                          selectedPeriod = periods[index];
+                                          BlocProvider.of<AggregatesCubit>(context).getAggregates(
+                                              widget.crypto.name ?? '',
+                                              '1',
+                                              selectedPeriod?.timespan ?? 'day',
+                                              DateFormat('yyyy-MM-dd')
+                                                  .format(DateTime(
+                                                      date.year,
+                                                      date.month - selectedPeriod!.period.months,
+                                                      date.day - selectedPeriod!.period.days))
+                                                  .toString(),
+                                              DateFormat('yyyy-MM-dd').format(date).toString(),
+                                              'asc',
+                                              5000,
+                                              kApiKey);
+                                          setState(() {});
+                                        },
+                                        isSelected: selectedPeriod == periods[index],
+                                      );
+                                    },
+                                    separatorBuilder: (BuildContext context, int index) {
+                                      return const SizedBox(width: 17);
+                                    },
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                height: 8,
+                                width: double.infinity,
+                                color: AppColors.kGrey,
+                              ),
 
-                          ///CHART
-                          CustomCartesianChartWidget(barList: barList),
-                          Container(
-                            height: 8,
-                            width: double.infinity,
-                            color: AppColors.kGrey,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              children: [
-                                Row(
+                              ///CHART
+                              CustomCartesianChartWidget(barList: barList),
+                              Container(
+                                height: 8,
+                                width: double.infinity,
+                                color: AppColors.kGrey,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Row(
-                                      children: [
-                                        const Text(
-                                          'HIGH:',
-                                          style: AppTextStyles.s14w400Grey,
-                                        ),
-                                        Text(
-                                          barList.map((e) => e.high).toList().reduce(max).toStringAsFixed(3),
-                                          style: AppTextStyles.s14w600,
-                                        ),
-                                      ],
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              const Text(
+                                                'HIGH:',
+                                                style: AppTextStyles.s14w400Grey,
+                                              ),
+                                              Text(
+                                                '${barList.map((e) => e.high).toList().reduce(max).toStringAsFixed(3)} USDT',
+                                                style: AppTextStyles.s14w600,
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(
+                                            height: 10,
+                                          ),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.start,
+                                            children: [
+                                              const Text(
+                                                'LOW:',
+                                                style: AppTextStyles.s14w400Grey,
+                                                textAlign: TextAlign.left,
+                                              ),
+                                              Text(
+                                                '${barList.map((e) => e.low).toList().reduce(min).toStringAsFixed(3)} USDT',
+                                                style: AppTextStyles.s14w600,
+                                                textAlign: TextAlign.left,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    const SizedBox(
-                                      height: 10,
-                                    ),
-                                    Row(
-                                      children: [
-                                        const Text(
-                                          'OPEN:',
-                                          style: AppTextStyles.s14w400Grey,
-                                        ),
-                                        Text(
-                                          barList.last.open.toStringAsFixed(3),
-                                          style: AppTextStyles.s14w600,
-                                        ),
-                                      ],
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              const Text(
+                                                'OPEN:',
+                                                style: AppTextStyles.s14w400Grey,
+                                              ),
+                                              Text(
+                                                '${barList.last.open.toStringAsFixed(3)} USDT',
+                                                style: AppTextStyles.s14w600,
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(
+                                            height: 10,
+                                          ),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.start,
+                                            children: [
+                                              const Text(
+                                                'CLOSE:',
+                                                style: AppTextStyles.s14w400Grey,
+                                              ),
+                                              Text(
+                                                '${barList.last.close.toStringAsFixed(3)} USDT',
+                                                style: AppTextStyles.s14w600,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'LOW:',
-                                          style: AppTextStyles.s14w400Grey,
-                                          textAlign: TextAlign.left,
-                                        ),
-                                        Text(
-                                          barList.map((e) => e.low).toList().reduce(min).toStringAsFixed(3),
-                                          style: AppTextStyles.s14w600,
-                                          textAlign: TextAlign.left,
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(
-                                      height: 10,
-                                    ),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'CLOSE:',
-                                          style: AppTextStyles.s14w400Grey,
-                                        ),
-                                        Text(
-                                          barList.last.close.toStringAsFixed(3),
-                                          style: AppTextStyles.s14w600,
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                              ),
+                              Container(
+                                height: 8,
+                                width: double.infinity,
+                                color: AppColors.kGrey,
+                              ),
+                            ],
                           ),
-                          Container(
-                            height: 8,
-                            width: double.infinity,
-                            color: AppColors.kGrey,
-                          ),
-                        ],
+                        ),
                       );
                     },
                   );
@@ -284,8 +307,14 @@ class _AggregatesPageState extends State<AggregatesPage> {
 }
 
 class Period {
+  // 1 day, 5 days, 1 week, 1 month, 3 months
+  //Name of periods  to display on buttons
   final String periodName;
+
+  //Periods in month and days to choose time interval
   final TimePeriod period;
+
+  //The size of the time window
   final String timespan;
 
   Period(this.periodName, this.period, this.timespan);

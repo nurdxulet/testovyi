@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -7,7 +6,6 @@ import 'package:testovyi/src/feature/home/repository/home_repository.dart';
 
 part 'daily_bars_cubit.freezed.dart';
 
-const _tag = 'DailyBarsCubit';
 
 class DailyBarsCubit extends Cubit<DailyBarsState> {
   final IHomeRepository _repository;

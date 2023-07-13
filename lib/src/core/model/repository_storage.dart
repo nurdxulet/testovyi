@@ -1,4 +1,3 @@
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:testovyi/src/core/network/layers/network_executer.dart';
 import 'package:testovyi/src/feature/home/datasource/home_remote_ds.dart';
 import 'package:testovyi/src/feature/home/repository/home_repository.dart';

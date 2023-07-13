@@ -32,7 +32,13 @@ class CryptoItemWidget extends StatelessWidget {
             child: Row(
               children: [
                 Text(
-                  crypto.name ?? '',
+                  crypto.name?.replaceAll(
+                          RegExp(
+                            'X:',
+                            dotAll: true,
+                          ),
+                          '') ??
+                      '',
                   // 'BTC / USDT',
                   style: AppTextStyles.s14w600,
                 ),
