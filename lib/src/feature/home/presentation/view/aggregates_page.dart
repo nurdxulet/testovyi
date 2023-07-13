@@ -1,8 +1,9 @@
+import 'dart:math';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:testovyi/src/core/enum/environment.dart';
 import 'package:testovyi/src/core/extension/src/build_context.dart';
 import 'package:testovyi/src/core/resources/resources.dart';
@@ -10,6 +11,7 @@ import 'package:testovyi/src/core/widget/custom/custom_snackbars.dart';
 import 'package:testovyi/src/feature/home/bloc/aggregates_cubit.dart';
 import 'package:testovyi/src/feature/home/model/crypto_dto.dart';
 import 'package:intl/intl.dart';
+import 'package:testovyi/src/feature/home/presentation/widgets/custom_cartesian_chart.dart';
 import 'package:testovyi/src/feature/home/presentation/widgets/time_period_widget.dart';
 
 class AggregatesPage extends StatefulWidget with AutoRouteWrapper {
@@ -17,7 +19,7 @@ class AggregatesPage extends StatefulWidget with AutoRouteWrapper {
   const AggregatesPage({super.key, required this.crypto});
 
   @override
-  _AggregatesPageState createState() => _AggregatesPageState();
+  State<AggregatesPage> createState() => _AggregatesPageState();
 
   @override
   Widget wrappedRoute(BuildContext context) {
@@ -29,43 +31,45 @@ class AggregatesPage extends StatefulWidget with AutoRouteWrapper {
 }
 
 class _AggregatesPageState extends State<AggregatesPage> {
-  final String dateFrom = DateFormat('yyyy-MM-dd').format(DateTime(2023, 01, 09));
-  final String dateTo = DateFormat('yyyy-MM-dd').format(DateTime(2023, 02, 09));
+  //Selected date
+  final DateTime date = DateTime(2023, 01, 09);
+  // final String date = DateFormat('yyyy-MM-dd').format(DateTime(2023, 01, 09));
+  // final String dateTo = DateFormat('yyyy-MM-dd').format(DateTime(2023, 02, 09));
   TextEditingController textFieldController = TextEditingController();
 
   RefreshController refreshController = RefreshController();
 
   Period? selectedPeriod;
   final List<Period> periods = [
-    Period('1Д', const Duration(days: 1), 'hour'),
-    Period('5Д', const Duration(days: 5), 'hour'),
-    Period('1Н', const Duration(days: 7), 'hour'),
-    Period('1МЕС', const Duration(days: 30), 'day'),
-    Period('3МЕС', const Duration(days: 90), 'day'),
+    Period('1Д', TimePeriod(months: 0, days: 1), 'hour'),
+    Period('5Д', TimePeriod(months: 0, days: 5), 'day'),
+    Period('1Н', TimePeriod(months: 0, days: 7), 'day'),
+    Period('1МЕС', TimePeriod(months: 1, days: 0), 'week'),
+    Period('3МЕС', TimePeriod(months: 3, days: 0), 'week'),
   ];
 
   @override
   void initState() {
-    _chartData = getChartData();
     selectedPeriod = periods.first;
     BlocProvider.of<AggregatesCubit>(context).getAggregates(
-        widget.crypto.name ?? '', '1', selectedPeriod?.timespan ?? 'day', dateFrom, dateTo, 'asc', 5000, kApiKey);
+        widget.crypto.name ?? '',
+        '1',
+        selectedPeriod?.timespan ?? 'day',
+        DateFormat('yyyy-MM-dd')
+            .format(
+                DateTime(date.year, date.month - selectedPeriod!.period.months, date.day - selectedPeriod!.period.days))
+            .toString(),
+        DateFormat('yyyy-MM-dd').format(date).toString(),
+        'asc',
+        5000,
+        kApiKey);
+
     super.initState();
   }
 
-  final String selectedTimespan = 'hour';
-
-  late List<SalesData> _chartData;
-
-  List<SalesData> getChartData() {
-    final List<SalesData> chartData = [
-      SalesData(2017, 25),
-      SalesData(2018, 12),
-      SalesData(2019, 24),
-      SalesData(2020, 18),
-      SalesData(2021, 30),
-    ];
-    return chartData;
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
@@ -153,8 +157,11 @@ class _AggregatesPageState extends State<AggregatesPage> {
                                           widget.crypto.name ?? '',
                                           '1',
                                           selectedPeriod?.timespan ?? 'day',
-                                          dateFrom,
-                                          dateTo,
+                                          DateFormat('yyyy-MM-dd')
+                                              .format(DateTime(date.year, date.month - selectedPeriod!.period.months,
+                                                  date.day - selectedPeriod!.period.days))
+                                              .toString(),
+                                          DateFormat('yyyy-MM-dd').format(date).toString(),
                                           'asc',
                                           5000,
                                           kApiKey);
@@ -174,15 +181,9 @@ class _AggregatesPageState extends State<AggregatesPage> {
                             width: double.infinity,
                             color: AppColors.kGrey,
                           ),
-                          SfCartesianChart(
-                            series: <LineSeries>[
-                              LineSeries<CryptoData, DateTime>(
-                                dataSource: barList,
-                                xValueMapper: (CryptoData data, _) => DateTime.fromMillisecondsSinceEpoch(data.time),
-                                yValueMapper: (CryptoData data, _) => data.close,
-                              ),
-                            ],
-                          ),
+
+                          ///CHART
+                          CustomCartesianChartWidget(barList: barList),
                           Container(
                             height: 8,
                             width: double.infinity,
@@ -202,7 +203,7 @@ class _AggregatesPageState extends State<AggregatesPage> {
                                           style: AppTextStyles.s14w400Grey,
                                         ),
                                         Text(
-                                          barList.first.high.toStringAsFixed(3),
+                                          barList.map((e) => e.high).toList().reduce(max).toStringAsFixed(3),
                                           style: AppTextStyles.s14w600,
                                         ),
                                       ],
@@ -217,7 +218,7 @@ class _AggregatesPageState extends State<AggregatesPage> {
                                           style: AppTextStyles.s14w400Grey,
                                         ),
                                         Text(
-                                          barList.first.open.toStringAsFixed(3),
+                                          barList.last.open.toStringAsFixed(3),
                                           style: AppTextStyles.s14w600,
                                         ),
                                       ],
@@ -236,7 +237,7 @@ class _AggregatesPageState extends State<AggregatesPage> {
                                           textAlign: TextAlign.left,
                                         ),
                                         Text(
-                                          barList.first.low.toStringAsFixed(3),
+                                          barList.map((e) => e.low).toList().reduce(min).toStringAsFixed(3),
                                           style: AppTextStyles.s14w600,
                                           textAlign: TextAlign.left,
                                         ),
@@ -253,7 +254,7 @@ class _AggregatesPageState extends State<AggregatesPage> {
                                           style: AppTextStyles.s14w400Grey,
                                         ),
                                         Text(
-                                          barList.first.close.toStringAsFixed(3),
+                                          barList.last.close.toStringAsFixed(3),
                                           style: AppTextStyles.s14w600,
                                         ),
                                       ],
@@ -282,17 +283,17 @@ class _AggregatesPageState extends State<AggregatesPage> {
   }
 }
 
-class SalesData {
-  final double year;
-  final double price;
-
-  SalesData(this.year, this.price);
-}
-
 class Period {
   final String periodName;
-  final Duration period;
+  final TimePeriod period;
   final String timespan;
 
   Period(this.periodName, this.period, this.timespan);
+}
+
+class TimePeriod {
+  final int days;
+  final int months;
+
+  TimePeriod({required this.days, required this.months});
 }
